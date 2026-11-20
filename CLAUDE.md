@@ -84,6 +84,7 @@ UTC, half-hour buckets, append-only — readers take the latest entry per `(sour
 - CommonJS in `src/`, ESM + TypeScript strict in `dashboard/`. No mixing.
 - Env-var prefixes: `TOKENTRACKER_` for CLI, `VITE_` for dashboard.
 - Git commits in **English**, conventional style (`feat:` / `fix:` / `refactor:` / `chore:` / `docs:` / `test:` / `ci:`).
+- For `ruoshuidegit/TokenTracker`, work directly on `main` for all changes and do not create new branches.
 - **Privacy**: token counts only — never prompts, messages, or conversation bodies.
 - `TokenTrackerBar/EmbeddedServer/` is gitignored; built on demand by `TokenTrackerBar/scripts/bundle-node.sh`.
 - After editing `TokenTrackerBar/project.yml`: `(cd TokenTrackerBar && xcodegen generate && ruby scripts/patch-pbxproj-icon.rb)`.

@@ -1,0 +1,10 @@
+dist/
+.build/
+__pycache__/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+Windows/bin/
+Windows/obj/
+Windows.Tests/bin/
+Windows.Tests/obj/

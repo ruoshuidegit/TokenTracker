@@ -1,0 +1,149 @@
+{
+  "policy_version": 4,
+  "cache_write_period": "5m",
+  "verified_at": "2026-11-20",
+  "exact": {
+    "gpt-6.2-astra": {
+      "input": 8,
+      "output": 40,
+      "cache_read": 0.4,
+      "cache_write": 10,
+      "priority_multiplier": 2,
+      "ultrafast_multiplier": 3,
+      "sources": ["https://developers.openai.com/api/docs/models/gpt-6.2-astra"]
+    },
+    "gpt-6.2-sol": {
+      "input": 2,
+      "output": 10,
+      "cache_read": 0.1,
+      "cache_write": 2.5,
+      "priority_multiplier": 2,
+      "ultrafast_multiplier": 3,
+      "sources": ["https://developers.openai.com/api/docs/models/gpt-6.2-sol"]
+    },
+    "gemini-3.8-flash": {
+      "input": 0.75,
+      "output": 3.75,
+      "cache_read": 0.075,
+      "cache_write": 0,
+      "sources": ["https://aistudio.google.com/docs/pricing#gemini-3.8-flash"]
+    },
+    "gemini-4-neon": {
+      "input": 3,
+      "output": 15,
+      "cache_read": 0.15,
+      "cache_write": 0,
+      "sources": ["https://aistudio.google.com/docs/pricing#gemini-4-neon"]
+    },
+    "gemini-4-carbon": {
+      "input": 2,
+      "output": 10,
+      "cache_read": 0.1,
+      "cache_write": 0,
+      "sources": ["https://aistudio.google.com/docs/pricing#gemini-4-carbon"]
+    },
+    "gemini-4-hydrogen": {
+      "input": 1.5,
+      "output": 7.5,
+      "cache_read": 0.075,
+      "cache_write": 0,
+      "sources": ["https://aistudio.google.com/docs/pricing#gemini-4-hydrogen"]
+    },
+    "claude-fable-5-1": {
+      "input": 10,
+      "output": 50,
+      "cache_read": 0.25,
+      "cache_write": 12.5,
+      "sources": [
+        "https://platform.claude.com/docs/en/models/fable-5-1/overview",
+        "https://cursor.com/docs/models/claude-fable-5-1"
+      ]
+    },
+    "claude-fable-5-2": {
+      "input": 8,
+      "output": 40,
+      "cache_read": 0.2,
+      "cache_write": 10,
+      "sources": [
+        "https://platform.claude.com/docs/en/models/fable-5-2/overview"
+      ]
+    }
+  },
+  "aliases": {
+    "opus-5": "claude-opus-5",
+    "fable-5": "claude-fable-5",
+    "gemini-flash-worker-agy": "gemini-4-hydrogen",
+    "gemini-4-hydrogen-tiered": "gemini-4-hydrogen",
+    "gemini-4-hydrogen-tiered-high": "gemini-4-hydrogen",
+    "gemini-4-hydrogen-tiered-xhigh": "gemini-4-hydrogen",
+    "gemini-3.8-flash-tiered": "gemini-3.8-flash",
+    "gemini-3.8-flash-n": "gemini-3.8-flash"
+  },
+  "source_exact": {
+    "pi-omlx": {
+      "Qwen3.8-27B-Uncensored-oQ4e-mtp": {
+        "input": 0, "output": 0, "cache_read": 0, "cache_write": 0,
+        "note": "已核实本机历史 Pi provider 配置使用 127.0.0.1 的 oMLX，本地推理无 API 费用。仅匹配此来源和型号。"
+      }
+    }
+  },
+  "long_context_models": ["gpt-6.2-astra", "gpt-6.2-sol"],
+  "model_efforts": {
+    "gpt-6.2-astra": ["low", "medium", "high", "xhigh"],
+    "gpt-6.2-sol": ["low", "medium", "high", "xhigh"],
+    "gemini-3.8-flash": ["low", "medium", "high"],
+    "gemini-4-carbon": ["low", "medium", "high"],
+    "gemini-4-argon": ["minimal", "low", "medium", "high"],
+    "gemini-4-neon": ["low", "medium", "high", "xhigh", "extra"],
+    "gemini-4-hydrogen": ["low", "medium", "high", "xhigh", "extra"]
+  },
+  "legacy_attribution": {
+    "gemini-pro-orchestrator-carbon": {"backend": "gemini-pro-orchestrator", "model": "gemini-4-carbon"},
+    "gemini-pro-orchestrator-argon": {"backend": "gemini-pro-orchestrator", "model": "gemini-4-argon"},
+    "gemini-pro-orchestrator-neon": {"backend": "gemini-pro-orchestrator", "model": "gemini-4-neon"},
+    "gemini-flash-worker-agy-carbon": {"backend": "gemini-flash-worker-agy", "model": "gemini-4-hydrogen"},
+    "gemini-flash-worker-agy-argon": {"backend": "gemini-flash-worker-agy", "model": "gemini-4-hydrogen"},
+    "gemini-flash-worker-agy-neon": {"backend": "gemini-flash-worker-agy", "model": "gemini-4-hydrogen"}
+  },
+  "rate_changes": [
+    {
+      "effective_from": "2026-12-01T00:00:00Z",
+      "exact": {
+        "gemini-4-carbon": {
+          "input": 4, "output": 20, "cache_read": 0.2, "cache_write": 0,
+          "sources": ["https://aistudio.google.com/docs/pricing#gemini-4-carbon"]
+        },
+        "gemini-4-argon": {
+          "input": 4, "output": 20, "cache_read": 0.2, "cache_write": 0,
+          "sources": ["https://aistudio.google.com/docs/pricing#gemini-4-argon"]
+        }
+      }
+    },
+    {
+      "effective_from": "2027-01-01T00:00:00Z",
+      "exact": {
+        "gemini-3.8-flash": {
+          "input": 1.5, "output": 7.5, "cache_read": 0.15, "cache_write": 0,
+          "sources": ["https://aistudio.google.com/docs/pricing#gemini-3.8-flash"]
+        }
+      }
+    },
+    {
+      "effective_from": "2027-03-01T08:00:00Z",
+      "exact": {
+        "gpt-6.2-astra": {
+          "input": 8, "output": 40, "cache_read": 0.4, "cache_write": 10,
+          "priority_multiplier": 2, "ultrafast_multiplier": 6,
+          "sources": ["https://developers.openai.com/api/docs/models/gpt-6.2-astra"]
+        },
+        "gpt-6.2-sol": {
+          "input": 2, "output": 10, "cache_read": 0.1, "cache_write": 2.5,
+          "priority_multiplier": 2, "ultrafast_multiplier": 6,
+          "sources": ["https://developers.openai.com/api/docs/models/gpt-6.2-sol"]
+        }
+      }
+    }
+  ],
+  "fable_versions": ["5-1", "5-2"],
+  "fable_suffixes": ["", "-thinking", "-thinking-xhigh", "-thinking-high", "-xhigh", "-high", "-max"]
+}

@@ -3,7 +3,7 @@
 const fs = require("node:fs/promises");
 const { createHash } = require("node:crypto");
 
-const VERSION = 4;
+const VERSION = 5;
 const INTERNAL_MODELS = new Set(["gemini-pro-orchestrator", "gemini-pro-orchestrator-neon", "gemini-flash-worker-agy"]);
 const FIELDS = ["input_tokens", "output_tokens", "cached_input_tokens", "cache_creation_input_tokens",
   "reasoning_output_tokens", "total_tokens", "billable_total_tokens"];
@@ -68,12 +68,14 @@ async function fileAllocations(file, cursor, parsers) {
     if (event.type === "USER_INPUT" || event.type === "USER_SETTINGS_CHANGE") {
       selection = selectedModel(event.content) || selection;
     }
-    const family = ["carbon", "argon", "neon", "hydrogen"].find((name) => selection?.toLowerCase().includes(name));
     if (event.type !== "PLANNER_RESPONSE" || index < (cursor.baselineLine || 0)) continue;
     const info = steps.get(event.step_index);
     const model = info?.model?.trim().toLowerCase();
     // Neon 专用 backend 优先使用明确型号；通用 planner 依选择归属，worker 独立归 Hydrogen。
     if (!info?.hasUsageMetadata || !INTERNAL_MODELS.has(model)) continue;
+    // 每次生成的型号可覆盖会话选择；未写入显示名的旧记录仍沿用选择事件。
+    const generatedFamily = /^Orchestrator \((Carbon|Argon|Neon)\)$/i.exec(info.modelDisplayName || "")?.[1].toLowerCase();
+    const family = generatedFamily || ["carbon", "argon", "neon", "hydrogen"].find((name) => selection?.toLowerCase().includes(name));
     if (model === "gemini-pro-orchestrator" && !["carbon", "argon", "neon"].includes(family)) continue;
     const timestamp = Date.parse(event.created_at);
     if (!Number.isFinite(timestamp)) continue;

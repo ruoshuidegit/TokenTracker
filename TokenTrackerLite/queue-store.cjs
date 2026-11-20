@@ -92,9 +92,42 @@ function rowPrice(row, pricing) {
   return { cost, unpriced };
 }
 
+// 针对已逐条核实的 Codex 历史，使用本机保存的半小时原始队列和更正后的队列。
+// 逐列对照完整时段。原 CLI 自行修复或补写后，Lite 自动撤回覆盖。
+async function reconcileCodexHistory(database, store, pricing) {
+  let records = [];
+  try { records = JSON.parse(await fs.readFile(store + ".codex-reconciled.json", "utf8")); }
+  catch (error) { if (error.code !== "ENOENT") throw error; }
+  if (!Array.isArray(records)) throw new Error("Codex 历史核对记录无效");
+  database.exec("DELETE FROM lite_collected_buckets WHERE source = 'codex'");
+  if (!records.length) return;
+  const fields = ["model", "tokens", ...TOKEN_FIELDS, "cost_usd", "unpriced_tokens"];
+  const read = database.prepare(`SELECT ${fields.join(", ")} FROM lite_buckets
+    WHERE source = 'codex' AND hour_start = ?`);
+  const insert = database.prepare(`INSERT INTO lite_collected_buckets
+    (source, hour_start, day, ${fields.join(", ")}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+  const values = (raw, hour, verified = false) => {
+    const row = normalizeRow(raw);
+    if (row?.source !== "codex" || row.hour_start !== hour) throw new Error("Codex 历史核对时段无效");
+    // 仅逐会话证实为 ChatGPT 账户的安全审核才免费，API 审核有独立计费规则。
+    const planReview = verified && row.model === "codex-auto-review" && row.billing_basis === "chatgpt_auto_review";
+    const { cost, unpriced } = planReview ? { cost: 0, unpriced: 0 } : rowPrice(row, pricing);
+    return [row.model, row.billable_total_tokens, ...TOKEN_FIELDS.map((key) => row[key]), cost, unpriced];
+  };
+  for (const { hour_start: hour, before, after } of records) {
+    if (!before?.length || !after?.length) throw new Error("Codex 历史核对用量为空");
+    const original = new Map(read.all(hour).map((row) => [row.model, fields.map((key) => row[key])]));
+    const expected = before.map((row) => values(row, hour));
+    if (new Set(expected.map(([model]) => model)).size !== before.length) throw new Error("Codex 历史原始型号重复");
+    if (original.size !== expected.length || !expected.every((row) =>
+      row.every((value, index) => original.get(row[0])?.[index] === value))) continue;
+    for (const row of after) insert.run("codex", hour, localDay(hour), ...values(row, hour, true));
+  }
+}
+
 function repriceCollected(database, pricing) {
   const rows = database.prepare(`SELECT source, model, hour_start, tokens AS total_tokens,
-    tokens AS billable_total_tokens, ${TOKEN_FIELDS.join(", ")} FROM lite_collected_buckets`).all();
+    tokens AS billable_total_tokens, ${TOKEN_FIELDS.join(", ")} FROM lite_collected_buckets WHERE source != 'codex'`).all();
   const update = database.prepare(`UPDATE lite_collected_buckets SET cost_usd = ?, unpriced_tokens = ?
     WHERE source = ? AND model = ? AND hour_start = ?`);
   for (const row of rows) {
@@ -297,6 +330,7 @@ async function processQueue({ queuePath, databasePath, now = new Date(), pricing
       collected_pricing_policy_version: pricingPolicyVersion,
       queue_updated_at: new Date(Number(rawBefore.mtimeMs)).toISOString() };
     saveState.run(JSON.stringify(state));
+    await reconcileCodexHistory(database, store, pricing);
     const snapshot = summarize(database, { now, queuePresent: true, state, stats, warnings, collection });
     database.exec("COMMIT");
     transaction = false;

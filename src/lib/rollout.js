@@ -23151,6 +23151,7 @@ function extractAntigravityGenInfo(buf) {
     let model = null;
     const f19 = inner.find((f) => f.num === 19)?.val;
     if (f19) model = Buffer.from(f19).toString("utf8").trim();
+    const displayName = inner.find((f) => f.num === 21)?.val;
 
     let contextTokens = 0;
     const f9 = inner.find((f) => f.num === 9)?.val;
@@ -23221,6 +23222,8 @@ function extractAntigravityGenInfo(buf) {
 
     return {
       model,
+      ...(Buffer.isBuffer(displayName) && displayName.length <= 160
+        ? { modelDisplayName: displayName.toString("utf8").trim() } : {}),
       contextTokens,
       lastStepIndex,
       ...(hasUsageMetadata

@@ -26,8 +26,8 @@ function vi(value) {
 const field = (number, value) => typeof value === "number"
   ? Buffer.concat([vi(number * 8), vi(value)])
   : Buffer.concat([vi(number * 8 + 2), vi(Buffer.byteLength(value)), Buffer.from(value)]);
-function proto(model, step, input, cache, output, reasoning) {
-  return field(1, Buffer.concat([field(19, model), field(4, Buffer.concat([
+function proto(model, step, input, cache, output, reasoning, displayName) {
+  return field(1, Buffer.concat([field(19, model), ...(displayName ? [field(21, displayName)] : []), field(4, Buffer.concat([
     field(2, input), field(5, cache), field(3, output), field(9, output - reasoning), field(10, reasoning),
   ])), field(20, Buffer.concat([field(1, "last_step_index"), field(2, String(step - 1))]))]));
 }
@@ -62,6 +62,25 @@ async function fixture(t) {
 }
 const tokens = (result, model) => result.rows.find((row) => row.model === model && row.hour_start === HOUR)?.total_tokens;
 const total = (rows, field = "total_tokens") => rows.reduce((sum, row) => sum + (row[field] || 0), 0);
+
+test("无设置事件的 planner 按逐次生成显示名补价，worker 独立统计", async (t) => {
+  const f = await fixture(t);
+  await fs.writeFile(f.transcript, lines([planner(1), planner(2), planner(4), planner(5), planner(7)]));
+  const previous = await f.collect();
+  assert.equal(tokens(previous, "gemini-pro-orchestrator"), 1300);
+  const db = new DatabaseSync(f.dbPath);
+  const update = db.prepare("UPDATE gen_metadata SET data = ? WHERE idx = ?");
+  update.run(proto("gemini-pro-orchestrator", 1, 100, 900, 70, 20, "Orchestrator (Carbon)"), 1);
+  update.run(proto("gemini-pro-orchestrator", 4, 20, 180, 30, 10, "Orchestrator (Argon)"), 4);
+  db.close();
+  const migrated = await f.collect();
+  assert.deepEqual(migrated.warnings, []);
+  assert.equal(tokens(migrated, "gemini-pro-orchestrator"), 0);
+  assert.equal(tokens(migrated, "gemini-4-carbon"), 1410);
+  assert.equal(tokens(migrated, "gemini-4-argon"), 230);
+  assert.equal(tokens(migrated, "gemini-4-hydrogen"), 160);
+  assert.deepEqual((await f.collect()).rows, migrated.rows);
+});
 
 test("同半小时切换 Carbon 与 Argon，planner 分别归属，Hydrogen worker 独立合并", async (t) => {
   const f = await fixture(t);
@@ -134,7 +153,7 @@ test("Neon 专用 backend 与通用 planner 独立归 Neon，旧 v3 缓存回填
   const migrated = await f.collect();
   assert.deepEqual(migrated.warnings, []);
   assert.deepEqual(migrated.rows, current.rows);
-  assert.equal((await f.saved()).model_attribution.version, 4);
+  assert.equal((await f.saved()).model_attribution.version, 5);
   assert.deepEqual((await f.collect()).rows, current.rows);
   for (const field of fields) assert.equal(total(saved.rows, field), total(migrated.rows, field), field);
 

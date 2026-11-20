@@ -57,6 +57,40 @@ test("控制记录不作为用量，损坏记录明确警告", async (t) => {
   assert.match((await f.read()).warning, /1 条无效用量记录/);
 });
 
+test("Codex 历史核对只覆盖完全匹配的原始时段，上游变化后撤回", async (t) => {
+  const unknown = row(40, { model: "unknown" });
+  const known = row(100);
+  const f = await fixture(t, lines(unknown, known));
+  assert.equal((await f.read()).all.tokens, 140);
+  await fs.writeFile(f.databasePath + ".codex-reconciled.json", JSON.stringify([{
+    hour_start: known.hour_start, before: [known, unknown], after: [row(115)],
+  }]));
+  const result = await f.read();
+  assert.equal(result.all.tokens, 115);
+  assert.equal(result.all.unpriced_tokens, 0);
+  assert.equal(result.models.length, 1);
+  assert.equal(result.all.cost_usd, pricing.computeRowCost(row(115)));
+  assert.deepEqual((await f.read()).all, result.all);
+  await fs.appendFile(f.queuePath, lines(row(90)));
+  const changed = await f.read();
+  assert.equal(changed.all.tokens, 130);
+  assert.equal(changed.all.unpriced_tokens, 40);
+});
+
+test("ChatGPT 计划内审核按已核实的时段免费，同名未核实审核保留待价", async (t) => {
+  const review = row(40, { model: "codex-auto-review" });
+  const api = { ...review, hour_start: "2026-11-10T01:00:00.000Z" };
+  const f = await fixture(t, lines(review, api));
+  assert.equal((await f.read()).all.unpriced_tokens, 80);
+  await fs.writeFile(f.databasePath + ".codex-reconciled.json", JSON.stringify([{
+    hour_start: review.hour_start, before: [review], after: [{ ...review, billing_basis: "chatgpt_auto_review" }],
+  }]));
+  const result = await f.read();
+  assert.equal(result.all.tokens, 80);
+  assert.equal(result.all.unpriced_tokens, 40);
+  assert.equal(result.all.cost_usd, 0);
+});
+
 test("不完整尾行不提交，补全后恰好读取一次", async (t) => {
   const complete = lines(row(10));
   const partial = JSON.stringify(row(25, { model: "gpt-5-mini" }));

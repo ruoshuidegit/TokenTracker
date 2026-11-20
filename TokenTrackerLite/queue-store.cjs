@@ -85,7 +85,7 @@ function rowPrice(row, pricing) {
   let unpriced = !exact && info.status === "unpriced" ? tokens : 0;
   if (!exact && info.status !== "unpriced" && row.source === "claude" && Array.isArray(row.backend_usage)) {
     unpriced = Math.min(tokens, row.backend_usage.reduce((sum, part) =>
-      sum + (part?.backend !== "anthropic" ? counter(part?.total_tokens) : 0), 0));
+      sum + (part?.backend === "custom" ? counter(part.total_tokens) : 0), 0));
   }
   const cost = pricing.computeRowCost(row);
   if (!Number.isFinite(cost) || cost < 0) throw new Error("离线费用计算失败");

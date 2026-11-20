@@ -185,13 +185,14 @@ test("本机 oMLX 精确来源与型号按本地推理计零 API 费用，不污
   const upstream = require("../src/lib/pricing");
   const model = "Qwen3.8-27B-Uncensored-oQ4e-mtp";
   const before = upstream.getModelPricingInfo(model, { source: "pi-omlx" });
+  const astraBefore = upstream.getModelPricingInfo("gpt-6.2-astra", { source: "codex" });
   const pricing = createLitePricing();
   assert.equal(pricing.getModelPricingInfo(model, { source: "pi-omlx" }).status, "free");
   close(pricing.computeRowCost(usage(model, { source: "pi-omlx" })), 0);
   assert.equal(pricing.getModelPricingInfo(model, { source: "codex" }).status, "unpriced");
   assert.equal(pricing.getModelPricingInfo("other-model", { source: "pi-omlx" }).status, "unpriced");
   assert.deepEqual(upstream.getModelPricingInfo(model, { source: "pi-omlx" }), before);
-  assert.equal(upstream.getModelPricingInfo("gpt-6.2-astra", { source: "codex" }).status, "unpriced");
+  assert.deepEqual(upstream.getModelPricingInfo("gpt-6.2-astra", { source: "codex" }), astraBefore);
 });
 
 test("历史待定价和部分费用重新计算，队列加速计数与保留采集桶均生效且 Token 不变", async (t) => {

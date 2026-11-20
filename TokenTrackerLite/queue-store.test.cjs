@@ -255,7 +255,8 @@ test("补价保留来源保护、免费、权威费用和原公式的计费子�
   const lite = getDefaultPricing();
   const mixed = row(100, { source: "claude", model: "claude-fable-5-1-thinking-xhigh", backend_usage: [
     { backend: "custom", input_tokens: 40, total_tokens: 40 },
-    { backend: "anthropic", input_tokens: 60, total_tokens: 60 },
+    { backend: "anthropic", input_tokens: 40, total_tokens: 40 },
+    { backend: "unknown", input_tokens: 20, total_tokens: 20 },
   ] });
   const f = await fixture(t, lines(mixed,
     row(50, { source: "lmstudio", model: "claude-fable-5-2" }),
@@ -273,7 +274,8 @@ test("价格策略改变时重算未变队列一次，原始模型主键与JSON�
   const model = "claude-fable-5.2-thinking";
   const text = lines(row(100, { source: "omp", model }));
   const f = await fixture(t, text);
-  const old = await f.read();
+  const old = await f.read({ pricing: { policyVersion: "before-fable-pricing",
+    getModelPricingInfo: () => ({ status: "unpriced" }), computeRowCost: () => 0 } });
   assert.equal(old.all.unpriced_tokens, 100);
   assert.equal(old.all.cost_usd, 0);
   const lite = getDefaultPricing();
@@ -335,14 +337,15 @@ test("Carbon 与 Argon 型号各自跨来源合并后排名，原始桶与总量
     row(20, { model: "gpt-5" }),
     row(999, { model: "carbon-old-month", hour_start: "2026-10-20T00:00:00.000Z" }),
   ));
-  const snapshot = await f.read();
+  const options = { pricing: getDefaultPricing() };
+  const snapshot = await f.read(options);
   assert.equal(snapshot.models[0].model, "gemini-4-argon");
   assert.equal(snapshot.models[0].source, "all");
   assert.equal(snapshot.models[0].tokens, 170);
   assert.equal(snapshot.models[1].model, "gemini-4-carbon");
   assert.equal(snapshot.models[1].source, "all");
   assert.equal(snapshot.models[1].tokens, 120);
-  assert.equal(snapshot.models[1].unpriced_tokens, 120);
+  assert.equal(snapshot.models[1].unpriced_tokens, 30);
   assert.equal(snapshot.month.tokens, 310);
   assert.equal(snapshot.all.tokens, 1309);
   const { DatabaseSync } = require("node:sqlite");
@@ -350,7 +353,7 @@ test("Carbon 与 Argon 型号各自跨来源合并后排名，原始桶与总量
   assert.equal(db.prepare("SELECT COUNT(*) AS n FROM lite_buckets WHERE lower(model) LIKE '%carbon%'").get().n, 4);
   assert.equal(db.prepare("SELECT COUNT(*) AS n FROM lite_buckets WHERE lower(model) LIKE '%argon%'").get().n, 3);
   db.close();
-  assert.deepEqual((await f.read()).models, snapshot.models);
+  assert.deepEqual((await f.read(options)).models, snapshot.models);
 });
 
 test("旧 Carbon / Argon 标签中的 worker 统一归 Hydrogen，仍按原始后端型号计价", async (t) => {
